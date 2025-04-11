@@ -112,7 +112,7 @@ class RobotPhysics:
         self.target_x = None  # No position movement
         self.target_y = None
         self.moving = True
-        self.goto_state = 0  # IDLE - pure rotation
+        self.goto_state = 3  # FINAL_ROTATION - for visualization
         self.goto_params = None
 
     def move_forward(self, distance: float) -> None:

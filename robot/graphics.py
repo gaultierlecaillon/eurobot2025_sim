@@ -14,7 +14,8 @@ from constants import (
     ROTATING_TO_TARGET,
     MOVING_FORWARD,
     FINAL_ROTATION,
-    CIRCLE_MARGIN
+    CIRCLE_MARGIN,
+    TRAJECTORY_POINT_RADIUS
 )
 
 @dataclass
@@ -120,6 +121,7 @@ class RobotGraphics:
             elif state == FINAL_ROTATION:
                 color = YELLOW
                 
+            # Draw line segment
             pygame.draw.line(
                 screen,
                 color,
@@ -127,6 +129,30 @@ class RobotGraphics:
                 points[i + 1],
                 2
             )
+            
+            # Draw larger points for rotation states
+            if state == ROTATING_TO_TARGET or state == FINAL_ROTATION:
+                pygame.draw.circle(
+                    screen,
+                    color,
+                    points[i],
+                    TRAJECTORY_POINT_RADIUS,
+                    0  # Filled circle
+                )
+        
+        # Draw the last point if it's a rotation state
+        if len(self.trajectory) > 0:
+            last_state = self.trajectory[-1].state
+            if last_state == ROTATING_TO_TARGET or last_state == FINAL_ROTATION:
+                last_point = points[-1]
+                last_color = BLUE if last_state == ROTATING_TO_TARGET else YELLOW
+                pygame.draw.circle(
+                    screen,
+                    last_color,
+                    last_point,
+                    TRAJECTORY_POINT_RADIUS,
+                    0  # Filled circle
+                )
 
     def draw_debug_info(
         self,

@@ -18,6 +18,7 @@ ROBOT_HEIGHT = 235
 
 # Robot visualization
 CIRCLE_MARGIN = 50  # Circle is 50mm larger than robot width (25mm on each side)
+TRAJECTORY_POINT_RADIUS = 5  # Radius of trajectory points in pixels
 
 # Robot movement parameters
 DEFAULT_SPEED = 500  # mm per second
