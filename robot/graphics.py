@@ -13,7 +13,8 @@ from constants import (
     YELLOW,
     ROTATING_TO_TARGET,
     MOVING_FORWARD,
-    FINAL_ROTATION
+    FINAL_ROTATION,
+    CIRCLE_MARGIN
 )
 
 @dataclass
@@ -68,16 +69,14 @@ class RobotGraphics:
         # Get screen coordinates
         screen_x, screen_y = convert_coords(x, y)
         
-        # Draw bounding box
-        pygame.draw.rect(
+        # Draw bounding circle with fixed margin
+        circle_width = self.width + int(CIRCLE_MARGIN * SCALE)
+        radius = circle_width // 2
+        pygame.draw.circle(
             screen,
-            RED, 
-            (
-                screen_x - self.width//2,
-                screen_y - self.height//2,
-                self.width,
-                self.height
-            ),
+            RED,
+            (screen_x, screen_y),
+            radius,
             2
         )
         

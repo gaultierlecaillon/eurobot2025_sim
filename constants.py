@@ -16,6 +16,9 @@ WINDOW_HEIGHT = int(MAP_HEIGHT * SCALE)
 ROBOT_WIDTH = 315
 ROBOT_HEIGHT = 235
 
+# Robot visualization
+CIRCLE_MARGIN = 50  # Circle is 50mm larger than robot width (25mm on each side)
+
 # Robot movement parameters
 DEFAULT_SPEED = 500  # mm per second
 DEFAULT_ROTATION_SPEED = 90  # degrees per second
