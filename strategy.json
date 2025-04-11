@@ -10,7 +10,7 @@
       "name": "grab 1st plants",
       "actions": [
         { "goto": "750,750,180" },
-        { "forward": "200" }
+        { "goto": "750,0,0" }
       ]
     }
   ]
