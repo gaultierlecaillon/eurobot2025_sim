@@ -1,0 +1,17 @@
+{
+  "type": "Strategy",
+  "name": "strat_bleu.json",
+  "description": "Strat Bleu",
+  "color": "blue",
+  "startingPos": "0,0,0",
+  "timer": "100",
+  "strategy": [    
+    {
+      "name": "grab 1st plants",
+      "actions": [
+        { "goto": "750,750,180" },
+        { "forward": "200" }
+      ]
+    }
+  ]
+}
