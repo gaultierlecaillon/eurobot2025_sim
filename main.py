@@ -71,12 +71,19 @@ def validate_strategy(data: Dict) -> None:
                 )
                 
             cmd = next(iter(action))
-            if cmd not in {"goto", "forward"}:
+            if cmd not in {"goto", "forward", "rotate"}:
                 raise ConfigError(
                     f"Unknown action command: {cmd}"
                 )
                 
-            if cmd == "goto":
+            if cmd == "rotate":
+                try:
+                    angle = float(action[cmd])
+                except ValueError:
+                    raise ConfigError(
+                        "Rotate command must be a number"
+                    )
+            elif cmd == "goto":
                 try:
                     x, y, angle = map(
                         float,
@@ -202,6 +209,9 @@ class Simulation:
                     elif "forward" in action:
                         distance = float(action["forward"])
                         self.robot.move_forward(distance)
+                    elif "rotate" in action:
+                        angle = float(action["rotate"])
+                        self.robot.rotate(angle)
                         
                     # Update until movement complete
                     if self.mode == "live":

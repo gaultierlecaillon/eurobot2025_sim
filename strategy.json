@@ -10,7 +10,13 @@
       "name": "grab 1st plants",
       "actions": [
         { "goto": "750,750,180" },
-        { "goto": "750,0,0" }
+        { "forward": "200" },
+        { "goto": "0,750,0" },
+        { "forward": "200" },
+        { "rotate": "90" },
+        { "forward": "-200" },
+        { "rotate": "-90" },
+        { "goto": "0,0,0" }
       ]
     }
   ]

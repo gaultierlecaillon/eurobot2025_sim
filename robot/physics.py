@@ -100,6 +100,21 @@ class RobotPhysics:
             final_angle=self.normalize_angle(final_angle)
         )
 
+    def rotate(self, angle_delta: float) -> None:
+        """Rotate the robot by a relative angle.
+        
+        Args:
+            angle_delta: Angle to rotate in degrees
+                        Positive = clockwise
+                        Negative = counterclockwise
+        """
+        self.target_angle = self.normalize_angle(self.angle + angle_delta)
+        self.target_x = None  # No position movement
+        self.target_y = None
+        self.moving = True
+        self.goto_state = 0  # IDLE - pure rotation
+        self.goto_params = None
+
     def move_forward(self, distance: float) -> None:
         """Move forward/backward relative to robot's current orientation.
         
@@ -113,8 +128,10 @@ class RobotPhysics:
         # cos for x movement (horizontal), sin for y movement (vertical)
         self.target_x = self.x + distance * math.cos(angle_rad)
         self.target_y = self.y + distance * math.sin(angle_rad)
-        self.target_angle = self.angle
+        self.target_angle = None  # No rotation
         self.moving = True
+        self.goto_state = 0  # IDLE - pure movement
+        self.goto_params = None
 
     def is_moving(self) -> bool:
         """Check if the robot is currently in motion."""
@@ -150,7 +167,9 @@ class RobotPhysics:
                 self.target_angle = None
                 
                 # If we're in a goto sequence, proceed to next step
-                if self.goto_state == 1:  # Finished rotating to face target
+                if self.goto_state == 0:  # Pure rotation (not part of goto)
+                    self.moving = False
+                elif self.goto_state == 1:  # Finished rotating to face target
                     # Start moving forward
                     self.target_x = self.goto_params.target_x
                     self.target_y = self.goto_params.target_y

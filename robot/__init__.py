@@ -32,6 +32,16 @@ class Robot:
         """Move forward by specified distance."""
         self.physics.move_forward(distance)
         
+    def rotate(self, angle: float) -> None:
+        """Rotate by specified angle.
+        
+        Args:
+            angle: Angle to rotate in degrees
+                  Positive = clockwise
+                  Negative = counterclockwise
+        """
+        self.physics.rotate(angle)
+        
     def is_moving(self) -> bool:
         """Check if robot is currently moving."""
         return self.physics.is_moving()
