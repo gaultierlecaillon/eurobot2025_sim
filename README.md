@@ -28,7 +28,7 @@ python main.py live 3.0
 
 ## Strategy File Format
 
-The simulation reads movement commands from a JSON file (`strategy.json`). Example format:
+The simulation reads movement commands from a JSON file (`strategies/strategy.json`). Example format:
 
 ```json
 {
