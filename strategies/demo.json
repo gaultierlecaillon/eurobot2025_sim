@@ -1,17 +1,16 @@
 {
   "type": "Strategy",
-  "name": "strat_bleu.json",
-  "description": "Strat Bleu",
+  "name": "Demo Strategy",
+  "description": "Simple demonstration of robot movement capabilities",
   "color": "blue",
   "startingPos": "0,0,0",
   "timer": "100",
-  "strategy": [    
+  "strategy": [
     {
-      "name": "grab 1st plants",
+      "name": "Move to center",
       "actions": [
-        { "goto": "750,750,180" },
-        { "forward": "200" },
-        { "rotate": "90" }
+        { "goto": "500,500,90" },
+        { "forward": "100" }
       ]
     }
   ]
