@@ -157,6 +157,9 @@ class Simulation:
             self.strategy = json.load(f)
         validate_strategy(self.strategy)
         
+        # Get robot color (affects coordinate system)
+        self.is_yellow = self.strategy.get("color", "blue").lower() == "yellow"
+        
         # Create robot
         self.robot = Robot("robot.png", SCALE, speed_multiplier)
         
@@ -165,6 +168,9 @@ class Simulation:
             float,
             self.strategy["startingPos"].split(",")
         )
+        # Invert y-axis for yellow robot
+        if self.is_yellow:
+            start_y = -start_y
         self.robot.set_position(start_x, start_y, start_angle)
         
         self.mode = mode
@@ -205,12 +211,17 @@ class Simulation:
                 for action in group["actions"]:
                     if "goto" in action:
                         x, y, angle = map(float, action["goto"].split(","))
+                        # Invert y-axis for yellow robot
+                        if self.is_yellow:
+                            x = -x
                         self.robot.move_to(x, y, angle)
                     elif "forward" in action:
                         distance = float(action["forward"])
                         self.robot.move_forward(distance)
                     elif "rotate" in action:
                         angle = float(action["rotate"])
+                        if self.is_yellow:
+                            angle = -angle                        
                         self.robot.rotate(angle)
                         
                     # Update until movement complete
