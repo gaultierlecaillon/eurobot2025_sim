@@ -22,13 +22,12 @@ TRAJECTORY_POINT_RADIUS = 5  # Radius of trajectory points in pixels
 
 # Robot movement parameters
 DEFAULT_SPEED = 500  # mm per second
-DEFAULT_ROTATION_SPEED = 90  # degrees per second
+DEFAULT_ROTATION_SPEED = 180  # degrees per second
 
 # Colors (RGB)
 WHITE: Tuple[int, int, int] = (255, 255, 255)
 BLACK: Tuple[int, int, int] = (0, 0, 0)
 RED: Tuple[int, int, int] = (255, 0, 0)
-BLUE: Tuple[int, int, int] = (0, 0, 255)
 GREEN: Tuple[int, int, int] = (0, 255, 0)
 YELLOW: Tuple[int, int, int] = (255, 255, 0)
 
