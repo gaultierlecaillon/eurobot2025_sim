@@ -29,7 +29,7 @@ class Physics:
         self.target_y = 0
         self.target_angle = 0
         self.distance_to_travel = 0
-        self.trajectory: List[Tuple[float, float]] = []
+        self.trajectory: List[Tuple[float, float, float, float, int]] = []  # (start_x, start_y, end_x, end_y, state)
         
     def _normalize_angle(self, angle: float) -> float:
         """Normalize angle to be between -180 and 180 degrees."""
@@ -86,11 +86,17 @@ class Physics:
         # Partial movement
         movement = max_movement if distance > 0 else -max_movement
         angle_rad = math.radians(self.angle)
+        
+        # Store start position
+        start_x = self.x
+        start_y = self.y
+        
+        # Update position
         self.x += movement * math.sin(angle_rad)
         self.y += movement * math.cos(angle_rad)
         
-        # Add point to trajectory
-        self.trajectory.append((self.x, self.y))
+        # Add line segment to trajectory
+        self.trajectory.append((start_x, start_y, self.x, self.y, self.state))
         
         # Update remaining distance
         self.distance_to_travel -= movement
@@ -102,13 +108,15 @@ class Physics:
         self.target_y = y
         self.target_angle = self._normalize_angle(angle)
         self.state = ROTATING_TO_TARGET
-        self.trajectory = [(self.x, self.y)]
+        # Store current position as start of new movement
+        self.trajectory.append((self.x, self.y, self.x, self.y, self.state))
         
     def forward(self, distance: float):
         """Start forward movement by relative distance."""
         self.distance_to_travel = distance
         self.state = MOVING_FORWARD
-        self.trajectory = [(self.x, self.y)]
+        # Store current position as start of new movement
+        self.trajectory.append((self.x, self.y, self.x, self.y, self.state))
         
     def rotate(self, angle: float):
         """Start rotation by relative angle."""
