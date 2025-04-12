@@ -23,6 +23,79 @@ class ConfigError(SimulationError):
     """Error in simulation configuration."""
     pass
 
+def parse_coordinates(coord_str: str, error_msg: str) -> Tuple[float, float, float]:
+    """Parse x,y,angle coordinates from string.
+    
+    Args:
+        coord_str: String in format "x,y,angle"
+        error_msg: Error message if parsing fails
+        
+    Returns:
+        Tuple of (x, y, angle) as floats
+        
+    Raises:
+        ConfigError: If format is invalid
+    """
+    try:
+        x, y, angle = map(float, coord_str.split(","))
+        return x, y, angle
+    except ValueError:
+        raise ConfigError(error_msg)
+
+def validate_action(action: Dict) -> None:
+    """Validate a single action command.
+    
+    Args:
+        action: Action dictionary
+        
+    Raises:
+        ConfigError: If action format is invalid
+    """
+    if not isinstance(action, dict):
+        raise ConfigError("Each action must be an object")
+        
+    if len(action) != 1:
+        raise ConfigError("Each action must have exactly one command")
+        
+    cmd = next(iter(action))
+    if cmd not in {"goto", "forward", "rotate"}:
+        raise ConfigError(f"Unknown action command: {cmd}")
+        
+    # Validate command parameters
+    try:
+        if cmd == "rotate":
+            float(action[cmd])  # Must be a number
+        elif cmd == "goto":
+            parse_coordinates(
+                action[cmd],
+                "Goto command must be in format: 'x,y,angle'"
+            )
+        elif cmd == "forward":
+            float(action[cmd])  # Must be a number
+    except ValueError:
+        raise ConfigError(f"{cmd.capitalize()} command has invalid value")
+
+def validate_strategy_group(group: Dict) -> None:
+    """Validate a strategy group.
+    
+    Args:
+        group: Strategy group dictionary
+        
+    Raises:
+        ConfigError: If group format is invalid
+    """
+    if not isinstance(group, dict):
+        raise ConfigError("Each strategy group must be an object")
+        
+    if "name" not in group or "actions" not in group:
+        raise ConfigError("Strategy groups must have 'name' and 'actions' fields")
+        
+    if not isinstance(group["actions"], list):
+        raise ConfigError("Group actions must be a list")
+        
+    for action in group["actions"]:
+        validate_action(action)
+
 def validate_strategy(data: Dict) -> None:
     """Validate strategy file format.
     
@@ -34,72 +107,19 @@ def validate_strategy(data: Dict) -> None:
     """
     required_fields = {"startingPos", "strategy"}
     if not all(field in data for field in required_fields):
-        raise ConfigError(
-            f"Strategy must contain fields: {', '.join(required_fields)}"
-        )
+        raise ConfigError(f"Strategy must contain fields: {', '.join(required_fields)}")
         
-    try:
-        # Validate starting position format
-        x, y, angle = map(float, data["startingPos"].split(","))
-    except ValueError:
-        raise ConfigError(
-            "Starting position must be in format: 'x,y,angle'"
-        )
-        
+    # Validate starting position
+    parse_coordinates(
+        data["startingPos"],
+        "Starting position must be in format: 'x,y,angle'"
+    )
+    
     if not isinstance(data["strategy"], list):
         raise ConfigError("Strategy must be a list of action groups")
         
     for group in data["strategy"]:
-        if not isinstance(group, dict):
-            raise ConfigError("Each strategy group must be an object")
-            
-        if "name" not in group or "actions" not in group:
-            raise ConfigError(
-                "Strategy groups must have 'name' and 'actions' fields"
-            )
-            
-        if not isinstance(group["actions"], list):
-            raise ConfigError("Group actions must be a list")
-            
-        for action in group["actions"]:
-            if not isinstance(action, dict):
-                raise ConfigError("Each action must be an object")
-                
-            if len(action) != 1:
-                raise ConfigError(
-                    "Each action must have exactly one command"
-                )
-                
-            cmd = next(iter(action))
-            if cmd not in {"goto", "forward", "rotate"}:
-                raise ConfigError(
-                    f"Unknown action command: {cmd}"
-                )
-                
-            if cmd == "rotate":
-                try:
-                    angle = float(action[cmd])
-                except ValueError:
-                    raise ConfigError(
-                        "Rotate command must be a number"
-                    )
-            elif cmd == "goto":
-                try:
-                    x, y, angle = map(
-                        float,
-                        action[cmd].split(",")
-                    )
-                except ValueError:
-                    raise ConfigError(
-                        "Goto command must be in format: 'x,y,angle'"
-                    )
-            elif cmd == "forward":
-                try:
-                    distance = float(action[cmd])
-                except ValueError:
-                    raise ConfigError(
-                        "Forward command must be a number"
-                    )
+        validate_strategy_group(group)
 
 class Simulation:
     """Robot movement simulation."""
@@ -157,21 +177,20 @@ class Simulation:
             self.strategy = json.load(f)
         validate_strategy(self.strategy)
         
-        # Get robot color (affects coordinate system)
+        # Get robot color and create robot instance
         self.is_yellow = self.strategy.get("color", "blue").lower() == "yellow"
-        
-        # Create robot
         self.robot = Robot("robot.png", SCALE, speed_multiplier)
         
-        # Set initial position
-        start_x, start_y, start_angle = map(
-            float,
-            self.strategy["startingPos"].split(",")
+        # Set initial position with coordinate system adjustment
+        start_x, start_y, start_angle = parse_coordinates(
+            self.strategy["startingPos"],
+            "Invalid starting position format"
         )
-        # Invert y-axis for yellow robot
-        if self.is_yellow:
-            start_y = -start_y
-        self.robot.set_position(start_x, start_y, start_angle)
+        self.robot.set_position(
+            start_x,
+            -start_y if self.is_yellow else start_y,  # Invert y for yellow
+            start_angle
+        )
         
         self.mode = mode
         
@@ -210,19 +229,21 @@ class Simulation:
             for group in self.strategy["strategy"]:
                 for action in group["actions"]:
                     if "goto" in action:
-                        x, y, angle = map(float, action["goto"].split(","))
+                        x, y, angle = parse_coordinates(
+                            action["goto"],
+                            "Invalid goto coordinates"
+                        )
+                        
                         # Invert y-axis for yellow robot
                         if self.is_yellow:
                             x = -x
-                        self.robot.move_to(x, y, angle)
+                            
+                        self.robot.move_to(x,y,angle)
                     elif "forward" in action:
-                        distance = float(action["forward"])
-                        self.robot.move_forward(distance)
+                        self.robot.move_forward(float(action["forward"]))
                     elif "rotate" in action:
                         angle = float(action["rotate"])
-                        if self.is_yellow:
-                            angle = -angle                        
-                        self.robot.rotate(angle)
+                        self.robot.rotate(-angle if self.is_yellow else angle)
                         
                     # Update until movement complete
                     if self.mode == "live":

@@ -2,7 +2,7 @@
   "type": "Strategy",
   "name": "strat_bleu.json",
   "description": "Strat Bleu",
-  "color": "yellow",
+  "color": "blue",
   "startingPos": "0,0,0",
   "timer": "100",
   "strategy": [    

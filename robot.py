@@ -5,8 +5,10 @@ class Robot:
     def __init__(self, image_path, scale, speed_multiplier=1.0):
         # Load and scale robot image
         self.original_image = pygame.image.load(image_path)
-        self.width = 315 * scale  # mm to pixels
-        self.height = 235 * scale  # mm to pixels
+        from constants import ROBOT_WIDTH, ROBOT_HEIGHT, DEFAULT_SPEED, DEFAULT_ROTATION_SPEED
+        
+        self.width = ROBOT_WIDTH * scale  # mm to pixels
+        self.height = ROBOT_HEIGHT * scale  # mm to pixels
         self.image = pygame.transform.scale(self.original_image, (int(self.width), int(self.height)))
         
         # Position and orientation
@@ -15,15 +17,18 @@ class Robot:
         self.angle = 0  # degrees
         
         # Movement parameters
-        self.speed = 500 * speed_multiplier  # mm per second
-        self.rotation_speed = 90 * speed_multiplier  # degrees per second
+        self.speed = DEFAULT_SPEED * speed_multiplier  # mm per second
+        self.rotation_speed = DEFAULT_ROTATION_SPEED * speed_multiplier  # degrees per second
         self.target_x = None
         self.target_y = None
         self.target_angle = None
         self.moving = False
         
+        # Import states from constants
+        from constants import IDLE, ROTATING_TO_TARGET, MOVING_FORWARD, FINAL_ROTATION
+        
         # Goto command state
-        self.goto_state = 0  # 0: idle, 1: rotating to target, 2: moving forward, 3: final rotation
+        self.goto_state = IDLE
         self.goto_params = None
         
     def set_position(self, x, y, angle):
@@ -59,7 +64,7 @@ class Robot:
         self.target_x = self.x  # Stay in place
         self.target_y = self.y
         self.moving = True
-        self.goto_state = 1
+        self.goto_state = ROTATING_TO_TARGET
         self.goto_params = {
             'target_x': x,
             'target_y': y,
@@ -86,62 +91,77 @@ class Robot:
         return self.moving
         
 
+    def _update_rotation(self, dt):
+        """Handle rotation updates"""
+        if self.target_angle is None:
+            return False
+            
+        # Calculate shortest rotation direction
+        angle_diff = (self.target_angle - self.angle + 180) % 360 - 180
+        
+        if abs(angle_diff) > 0.1:
+            # Calculate rotation for this frame
+            rotation = min(self.rotation_speed * dt, abs(angle_diff))
+            # Update angle
+            self.angle += math.copysign(rotation, angle_diff)
+            return False
+        else:
+            self.angle = self.target_angle
+            self.target_angle = None
+            return True
+            
+    def _update_position(self, dt):
+        """Handle position updates"""
+        if self.target_x is None or self.target_y is None:
+            return False
+            
+        dx = self.target_x - self.x
+        dy = self.target_y - self.y
+        distance = math.sqrt(dx*dx + dy*dy)
+        
+        if distance > 0:
+            # Calculate movement for this frame
+            move_distance = min(self.speed * dt, distance)
+            # Update position
+            self.x += (dx/distance) * move_distance
+            self.y += (dy/distance) * move_distance
+            
+            # If we're close enough to target, snap to it
+            if move_distance >= distance:
+                self.x = self.target_x
+                self.y = self.target_y
+                self.target_x = None
+                self.target_y = None
+                return True
+        return False
+
     def update(self, dt=1/60):
+        """Update robot state"""
         if not self.moving:
             return
 
         # Handle rotation
-        if self.target_angle is not None:
-            # Calculate shortest rotation direction
-            angle_diff = (self.target_angle - self.angle + 180) % 360 - 180
-            
-            if abs(angle_diff) > 0.1:
-                # Calculate rotation for this frame
-                rotation = min(self.rotation_speed * dt, abs(angle_diff))
-                # Update angle
-                self.angle += math.copysign(rotation, angle_diff)
-            else:
-                self.angle = self.target_angle
-                self.target_angle = None
-                
-                # If we're in a goto sequence, proceed to next step
-                if self.goto_state == 1:  # Finished rotating to face target
-                    # Start moving forward
-                    self.target_x = self.goto_params['target_x']
-                    self.target_y = self.goto_params['target_y']
-                    self.goto_state = 2
-                elif self.goto_state == 3:  # Finished final rotation
-                    self.goto_state = 0
-                    self.goto_params = None
-                    self.moving = False
+        if rotation_complete := self._update_rotation(dt):
+            # If we're in a goto sequence, proceed to next step
+            if self.goto_state == ROTATING_TO_TARGET:
+                # Start moving forward
+                self.target_x = self.goto_params['target_x']
+                self.target_y = self.goto_params['target_y']
+                self.goto_state = MOVING_FORWARD
+            elif self.goto_state == FINAL_ROTATION:
+                self.goto_state = IDLE
+                self.goto_params = None
+                self.moving = False
 
         # Handle position movement
-        if self.target_x is not None and self.target_y is not None:
-            dx = self.target_x - self.x
-            dy = self.target_y - self.y
-            distance = math.sqrt(dx*dx + dy*dy)
-            
-            if distance > 0:
-                # Calculate movement for this frame
-                move_distance = min(self.speed * dt, distance)
-                # Update position
-                self.x += (dx/distance) * move_distance
-                self.y += (dy/distance) * move_distance
-                
-                # If we're close enough to target, snap to it
-                if move_distance >= distance:
-                    self.x = self.target_x
-                    self.y = self.target_y
-                    self.target_x = None
-                    self.target_y = None
-                    
-                    # If we're in a goto sequence, proceed to final rotation
-                    if self.goto_state == 2:
-                        self.target_angle = self.goto_params['final_angle']
-                        self.goto_state = 3
+        if position_complete := self._update_position(dt):
+            # If we're in a goto sequence, proceed to final rotation
+            if self.goto_state == MOVING_FORWARD:
+                self.target_angle = self.goto_params['final_angle']
+                self.goto_state = FINAL_ROTATION
 
         # Update moving state
-        if self.goto_state == 0:
+        if self.goto_state == IDLE:
             self.moving = (self.target_x is not None or self.target_angle is not None)
         
     def draw(self, screen, convert_coords):
